@@ -552,29 +552,48 @@ function handleEnemies() {
 }
 
 // Resources
-const amounts = [20, 30, 40];
+const amounts = [20, 30, 40, 50];
+const coin = new Image();
+coin.src = 'assets/img/others/coin.png';
+
 class Resource {
     constructor() {
-        this.x = Math.random() * (canvas.width - cellSize * 1.5) + cellSize;
+        this.x = Math.random() * (canvas.width - cellSize * 2.5) + cellSize * 2;
         this.y = (Math.floor(Math.random() * 5) + 1) * cellSize + 25;
-        this.width = cellSize * 0.6;
-        this.height = cellSize * 0.6;
+        this.width = 151 * 0.45;
+        this.height = 151 * 0.45;
+        this.spriteWidth = 151;
+        this.spriteHeight = 151;
         this.amount = amounts[Math.floor(Math.random() * amounts.length)];
+        this.image = coin;
+        this.frame = 0;
+        this.minFrame = 0;
+        this.maxFrame = 5;
+        this.fps = 18;
     }
     draw() {
-        ctx.fillStyle = 'yellow';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        // Debugging
+        // ctx.fillStyle = 'yellow';
+        // ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.drawImage(this.image, this.spriteWidth * this.frame, 0, this.spriteWidth, this.spriteHeight, this.x, this.y, this.width, this.height)
         ctx.fillStyle = 'black'
         ctx.font = '20px Orbitron';
-        ctx.fillText(this.amount, this.x + 15, this.y + 25);
+        ctx.fillText(this.amount, this.x + 18, this.y + 4);
+    }
+    update() {
+        if (frame % this.fps === 0) {
+            if (this.frame < this.maxFrame) this.frame++;
+            else this.frame = this.minFrame;
+        }
     }
 }
 
 function handleResources() {
-    if (frame % 500 === 0 && score < winningScore) {
+    if (frame % 450 === 0 && score < winningScore) {
         resources.push(new Resource());
     }
     for (let i = 0; i < resources.length; i++) {
+        resources[i].update();
         resources[i].draw();
         if (resources[i] && mouse.x && mouse.y && collisionDetection(resources[i], mouse)) {
             numberOfResources += resources[i].amount;
