@@ -19,6 +19,7 @@ const enemyPositions = [];
 const projectiles = [];
 const resources = [];
 const floatingMessages = [];
+const pathArray = [];
 const winningScore = 30;
 
 // Mouse
@@ -81,6 +82,83 @@ function handleGameGrid() {
         gameGrid[i].draw();
     }
 };
+
+// Background
+const mill = new Image();
+mill.src = 'assets/img/bg/ROUND-BASE.png';
+const sail = new Image();
+sail.src = 'assets/img/bg/ROTATINGSAIL-OUTLINED.png';
+const path = new Image();
+path.src = 'assets/img/bg/brick_lane.png';
+
+class Mill {
+    constructor() {
+        this.x = 0;
+        this.y = 175;
+        this.image = mill;
+        this.width = 883;
+        this.height = 1080;
+    }
+    draw() {
+        ctx.drawImage(this.image, this.x, this.y, this.width * 0.22, this.height * 0.22);
+    }
+}
+
+class Sail {
+    constructor() {
+        this.x = -5;
+        this.y = 150;
+        this.spriteWidth = 1150;
+        this.spriteHeight = 1150;
+        this.frame = 0;
+        this.minFrame = 0;
+        this.maxFrame = 8;
+        this.fps = 30;
+        this.image = sail;
+    }
+    update() {
+        if (frame % this.fps === 0) {
+            if (this.frame < this.maxFrame) {
+                this.frame++;
+            } else this.frame = this.minFrame;
+        }
+    }
+    draw() {
+        ctx.drawImage(this.image, this.spriteWidth * this.frame, 0, this.spriteWidth, this.spriteHeight, this.x, this.y, this.spriteWidth * 0.175, this.spriteHeight * 0.175);
+    }
+}
+
+class Path {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 1492;
+        this.height = 236;
+        this.image = path;
+    }
+    draw() {
+        ctx.drawImage(this.image, this.x, this.y, this.width * 0.5, this.height * 0.25);
+    }
+}
+
+function createPaths() {
+    for (let y = 145; y < canvas.height; y += cellSize) {
+        pathArray.push(new Path(200, y));
+    };
+}
+createPaths();
+
+const millObj = new Mill();
+const sailObj = new Sail();
+
+function handleBackground() {
+    millObj.draw();
+    sailObj.update();
+    sailObj.draw();
+    for (let j = 0; j < pathArray.length; j++) {
+        pathArray[j].draw();
+    };
+}
 
 // Projectiles
 const projectileWeak = new Image();
@@ -558,6 +636,7 @@ function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'blue';
     ctx.fillRect(0, 0, controlbar.width, controlbar.height);
+    handleBackground();
     handleGameGrid();
     handleDefenders();
     handleResources();
