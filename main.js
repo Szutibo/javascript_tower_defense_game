@@ -14,7 +14,7 @@ let score = 0;
 let chosenDefender = 1;
 const gameGrid = [];
 const defenders = [];
-const defenderTypes = [];
+// const defenderTypes = [];
 const enemies = [];
 const enemyPositions = [];
 const projectiles = [];
@@ -129,54 +129,78 @@ const defender1 = new Image();
 defender1.src = 'assets/img/defenders/afro_mushroom.png';
 const defender2 = new Image();
 defender2.src = 'assets/img/defenders/bug_cute.png';
-defenderTypes.push(defender1);
-defenderTypes.push(defender2);
+// defenderTypes.push(defender1);
+// defenderTypes.push(defender2);
 
 class Defender {
     constructor(x, y) {
         this.x = x;
         this.y = y;
+        this.hpTextX = x + 15;
+        this.hpTextY = y + 22;
         this.width = cellSize - cellGap * 2;
         this.height = cellSize - cellGap * 2;
-        this.shooting = false;
         this.health = 100;
         this.projectiles = [];
         this.timer = 0;
         this.frameX = 0;
         this.frameY = 0;
-        this.spriteWidth = 503;
-        this.spriteHeight = 513;
         this.minFrame = 0;
         this.maxFrame = 4;
-        this.fps = 14;
+        this.shooting = false;
+        this.shootNow = false;
+        this.shootingFrame = 3;
+        this.fps = 18;
         this.chosenDefender = chosenDefender;
     }
     draw() {
         // Debugging
-        //ctx.fillStyle = 'blue';
-        //ctx.fillRect(this.x, this.y, this.width, this.height);
+        // ctx.fillStyle = 'blue';
+        // ctx.fillRect(this.x, this.y, this.width, this.height);
         ctx.fillStyle = 'gold';
         ctx.font = '30px Orbitron';
-        ctx.fillText(Math.floor(this.health), this.x + 15, this.y + 22);
-        if (this.chosenDefender === 1) {
-            ctx.drawImage(defender1, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x + 5, this.y + 17, this.spriteWidth * 0.16, this.spriteHeight * 0.16);
-        } else if (this.chosenDefender === 2) {
-            ctx.drawImage(defender2, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x + 5, this.y + 17, this.spriteWidth * 0.16, this.spriteHeight * 0.16);
-        }
+        ctx.fillText(Math.floor(this.health), this.hpTextX, this.hpTextY);
     }
     update() {
         if (frame % this.fps === 0) {
             if (this.frameX < this.maxFrame) this.frameX++;
             else this.frameX = this.minFrame;
+            if (this.frameX === this.shootingFrame) this.shootNow = true;
         }
-        if (this.shooting) {
-            this.timer++;
-            if (this.timer % 100 === 0) {
-                projectiles.push(new Projectile(this.x + 50, this.y + 50));
-            }
-        } else {
-            this.timer = 0;
+        if (this.shooting && this.shootNow) {
+            projectiles.push(new Projectile(this.x + 50, this.y + 50));
+            this.shootNow = false;
         }
+    }
+}
+
+class AfroShroom extends Defender {
+    constructor(x, y) {
+        super(x, y);
+        this.spriteWidth = 503;
+        this.spriteHeight = 513;
+        this.cost = 100;
+        this.image = defender1;
+    }
+    draw() {
+        super.draw();
+        ctx.drawImage(this.image, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x + 5, this.y + 17, this.spriteWidth * 0.16, this.spriteHeight * 0.16);
+    }
+}
+
+class CuteBug extends Defender {
+    constructor(x, y) {
+        super(x, y);
+        this.spriteWidth = 255;
+        this.spriteHeight = 209;
+        this.maxFrame = 14;
+        this.cost = 200;
+        this.image = defender2;
+        this.fps = 13;
+    }
+    draw() {
+        super.draw();
+        ctx.drawImage(defender2, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x - 16, this.y + 10, this.spriteWidth * 0.45, this.spriteHeight * 0.45);
     }
 }
 
@@ -192,7 +216,7 @@ function handleDefenders() {
         for (let j = 0; j < enemies.length; j++) {
             if (defenders[i] && collisionDetection(defenders[i], enemies[j])) {
                 enemies[j].movement = 0;
-                defenders[i].health -= 0.2;
+                defenders[i].health -= enemies[j].damage;
             }
             if (defenders[i] && defenders[i].health <= 0) {
                 defenders.splice(i, 1);
@@ -342,6 +366,7 @@ class Carrott extends Enemy {
         this.spriteWidth = 608;
         this.spriteHeight = 592;
         this.image = enemy1;
+        this.damage = 0.1;
     }
     draw() {
         super.draw();
@@ -361,6 +386,7 @@ class GrassMonster extends Enemy {
         this.spriteHeight = 823;
         this.image = enemy3;
         this.maxFrame = 12;
+        this.damage = 0.2;
     }
     draw() {
         super.draw();
@@ -380,6 +406,7 @@ class Bug extends Enemy {
         this.spriteHeight = 789;
         this.image = enemy2;
         this.maxFrame = 20;
+        this.damage = 0.3;
     }
     draw() {
         super.draw();
@@ -487,16 +514,23 @@ function handleGameStatus() {
 
 // Placing defenders
 canvas.addEventListener('click', function () {
+    let defenderCost;
     const gridPositionX = mouse.x - (mouse.x % cellSize) + cellGap;
     const gridPositionY = mouse.y - (mouse.y % cellSize) + cellGap;
     if (gridPositionY < cellSize || gridPositionX <= cellSize * 2) return;
     for (let i = 0; i < defenders.length; i++) {
         if (defenders[i].x === gridPositionX && defenders[i].y === gridPositionY) return;
     };
-    let defenderCost = 100;
+    if (chosenDefender === 1) defenderCost = 100;
+    else if (chosenDefender === 2) defenderCost = 200;
     if (numberOfResources >= defenderCost) {
-        defenders.push(new Defender(gridPositionX, gridPositionY));
-        numberOfResources -= defenderCost;
+        if (chosenDefender === 1) {
+            defenders.push(new AfroShroom(gridPositionX, gridPositionY));
+            numberOfResources -= defenderCost;
+        } else if (chosenDefender === 2) {
+            defenders.push(new CuteBug(gridPositionX, gridPositionY));
+            numberOfResources -= defenderCost;
+        }
     } else {
         floatingMessages.push(new FloatingMessage('You need more resources!', mouse.x, mouse.y, 20, 'blue'));
     }
