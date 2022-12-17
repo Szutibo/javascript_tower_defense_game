@@ -14,7 +14,6 @@ let score = 0;
 let chosenDefender = 1;
 const gameGrid = [];
 const defenders = [];
-// const defenderTypes = [];
 const enemies = [];
 const enemyPositions = [];
 const projectiles = [];
@@ -84,23 +83,43 @@ function handleGameGrid() {
 };
 
 // Projectiles
+const projectileWeak = new Image();
+projectileWeak.src = 'assets/img/others/projectile1.png';
+const projectileStrong = new Image();
+projectileStrong.src = 'assets/img/others/projectile2.png';
+
 class Projectile {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 10;
-        this.height = 10;
-        this.power = 20;
-        this.speed = 5;
+        this.width = 20;
+        this.height = 20;
     }
     update() {
         this.x += this.speed;
     }
     draw() {
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.width, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+    }
+}
+
+class WeakerProjectile extends Projectile {
+    constructor(x, y) {
+        super(x, y);
+        this.power = 15;
+        this.speed = 6;
+        this.image = projectileWeak;
+    }
+}
+
+class StrongerProjectile extends Projectile {
+    constructor(x, y) {
+        super(x, y);
+        this.power = 35;
+        this.speed = 4;
+        this.width = 30;
+        this.height = 30;
+        this.image = projectileStrong;
     }
 }
 
@@ -129,8 +148,6 @@ const defender1 = new Image();
 defender1.src = 'assets/img/defenders/afro_mushroom.png';
 const defender2 = new Image();
 defender2.src = 'assets/img/defenders/bug_cute.png';
-// defenderTypes.push(defender1);
-// defenderTypes.push(defender2);
 
 class Defender {
     constructor(x, y) {
@@ -168,7 +185,8 @@ class Defender {
             if (this.frameX === this.shootingFrame) this.shootNow = true;
         }
         if (this.shooting && this.shootNow) {
-            projectiles.push(new Projectile(this.x + 50, this.y + 50));
+            if (this.chosenDefender === 1) projectiles.push(new WeakerProjectile(this.x + 40, this.y + 77));
+            else if (this.chosenDefender === 2) projectiles.push(new StrongerProjectile(this.x + 70, this.y + 50));
             this.shootNow = false;
         }
     }
