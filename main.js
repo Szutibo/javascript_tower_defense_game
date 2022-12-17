@@ -16,7 +16,6 @@ const gameGrid = [];
 const defenders = [];
 const defenderTypes = [];
 const enemies = [];
-const enemyTypes = [];
 const enemyPositions = [];
 const projectiles = [];
 const resources = [];
@@ -31,10 +30,10 @@ const mouse = {
     height: 0.1,
     clicked: false,
 }
-canvas.addEventListener('mousedown', function() {
+canvas.addEventListener('mousedown', function () {
     mouse.clicked = true;
 });
-canvas.addEventListener('mouseup', function() {
+canvas.addEventListener('mouseup', function () {
     mouse.clicked = false;
 });
 
@@ -300,9 +299,6 @@ const enemy2 = new Image();
 enemy2.src = 'assets/img/enemies/bug_walking.png';
 const enemy3 = new Image();
 enemy3.src = 'assets/img/enemies/grass_monster_walking.png';
-enemyTypes.push(enemy1);
-enemyTypes.push(enemy2);
-enemyTypes.push(enemy3);
 
 class Enemy {
     constructor(verticalPosition) {
@@ -310,20 +306,16 @@ class Enemy {
         this.y = verticalPosition;
         this.width = cellSize - cellGap * 2;
         this.height = cellSize - cellGap * 2;
-        this.speed = Math.random() * 0.2 + 0.4;
-        this.movement = this.speed;
-        this.health = 100;
-        this.maxHealth = this.health;
-        this.enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        this.hpTextX = canvas.width + 15;
+        this.hpTextY = verticalPosition + 23;
         this.frameX = 0;
         this.frameY = 0;
         this.minFrame = 0;
         this.maxFrame = 5;
-        this.spriteWidth = 608;
-        this.spriteHeight = 592;
     }
     update() {
         this.x -= this.movement;
+        this.hpTextX -= this.movement;
         if (frame % 10 === 0) {
             if (this.frameX < this.maxFrame) this.frameX++;
             else this.frameX = this.minFrame;
@@ -335,18 +327,70 @@ class Enemy {
         // ctx.fillRect(this.x, this.y, this.width, this.height);
         ctx.fillStyle = 'gold';
         ctx.font = '30px Orbitron';
-        ctx.fillText(Math.floor(this.health), this.x + 15, this.y + 23);
-        ctx.drawImage(this.enemyType, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x + 10, this.y + 20, this.spriteWidth * 0.14, this.spriteHeight * 0.14);
+        ctx.fillText(Math.floor(this.health), this.hpTextX, this.hpTextY);
     }
 }
 
+// Easy
 class Carrott extends Enemy {
-    constructor() {
-        
+    constructor(verticalPosition) {
+        super(verticalPosition);
+        this.speed = Math.random() * 0.2 + 0.5;
+        this.movement = this.speed;
+        this.health = 60;
+        this.maxHealth = this.health;
+        this.spriteWidth = 608;
+        this.spriteHeight = 592;
+        this.image = enemy1;
+    }
+    draw() {
+        super.draw();
+        ctx.drawImage(this.image, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x + 10, this.y + 20, this.spriteWidth * 0.14, this.spriteHeight * 0.14);
+    }
+}
+
+// Medium
+class GrassMonster extends Enemy {
+    constructor(verticalPosition) {
+        super(verticalPosition);
+        this.speed = Math.random() * 0.2 + 0.28;
+        this.movement = this.speed;
+        this.health = 120;
+        this.maxHealth = this.health;
+        this.spriteWidth = 948;
+        this.spriteHeight = 823;
+        this.image = enemy3;
+        this.maxFrame = 12;
+    }
+    draw() {
+        super.draw();
+        ctx.drawImage(this.image, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x - 5, this.y + 10, this.spriteWidth * 0.11, this.spriteHeight * 0.11);
+    }
+}
+
+// Tough
+class Bug extends Enemy {
+    constructor(verticalPosition) {
+        super(verticalPosition);
+        this.speed = Math.random() * 0.2 + 0.18;
+        this.movement = this.speed;
+        this.health = 180;
+        this.maxHealth = this.health;
+        this.spriteWidth = 1216;
+        this.spriteHeight = 789;
+        this.image = enemy2;
+        this.maxFrame = 20;
+    }
+    draw() {
+        super.draw();
+        ctx.drawImage(this.image, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x - 5, this.y + 15, this.spriteWidth * 0.12, this.spriteHeight * 0.12);
     }
 }
 
 function handleEnemies() {
+    let enemyType = Math.random();
+    let carrottProbability = 0.45;
+    let grassMonsterProbability = 0.75;
     for (let i = 0; i < enemies.length; i++) {
         enemies[i].draw();
         enemies[i].update();
@@ -354,7 +398,7 @@ function handleEnemies() {
             gameOver = true;
         }
         if (enemies[i].health <= 0) {
-            let gainedResources = enemies[i].maxHealth * 0.1;
+            let gainedResources = enemies[i].maxHealth * 0.15;
             floatingMessages.push(new FloatingMessage('+' + gainedResources, enemies[i].x, enemies[i].y, 30, 'black'));
             floatingMessages.push(new FloatingMessage('+' + gainedResources, 470, 85, 30, 'gold'));
             numberOfResources += gainedResources;
@@ -367,10 +411,20 @@ function handleEnemies() {
     }
     if (frame % enemiesInterval === 0 && score < winningScore) {
         let verticalPosition = Math.floor(Math.random() * 5 + 1) * cellSize + cellGap;
-        enemies.push(new Enemy(verticalPosition));
+        if (enemiesInterval > 400) {
+            carrottProbability = 0.45;
+            grassMonsterProbability = 0.75;
+        } else if (enemiesInterval <= 400) {
+            carrottProbability = 0.35;
+            grassMonsterProbability = 0.65;
+        }
+        if (enemyType < carrottProbability) enemies.push(new Carrott(verticalPosition));
+        else if (enemyType < grassMonsterProbability) enemies.push(new GrassMonster(verticalPosition));
+        else enemies.push(new Bug(verticalPosition));
         enemyPositions.push(verticalPosition);
         // Game difficulty
-        if (enemiesInterval > 120) enemiesInterval -= 50;
+        if (enemiesInterval > 400) enemiesInterval -= 40;
+        else if (enemiesInterval > 120) enemiesInterval -= 60;
     }
 }
 
