@@ -21,3 +21,26 @@ body {
     width: 900px;
     height: 600px;
 }
+
+#startButton {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 35px;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 1px 1px 2px red, 0 0 1em blue;
+    padding: 5px 15px;
+    border-radius: 5px;
+    background-color: aqua;
+    cursor: pointer;
+    border: 3px solid gold;
+}
+
+#startButton:hover {
+    scale: 1.1;   
+}
+
+#startButton:active {
+    top: calc(50% + 5px);
+}

@@ -4,9 +4,10 @@ canvas.width = 900;
 canvas.height = 600;
 
 // Global variables
+const startButton = document.getElementById('startButton');
 const cellSize = 100;
 const cellGap = 3;
-let enemiesInterval = 600;
+let enemiesInterval = 550;
 let numberOfResources = 300;
 let frame = 0;
 let gameOver = false;
@@ -20,7 +21,13 @@ const projectiles = [];
 const resources = [];
 const floatingMessages = [];
 const pathArray = [];
-const winningScore = 30;
+const winningScore = 150;
+let isUserInteracted = false;
+
+// Audio files
+const bgMusic = new Audio();
+bgMusic.src = 'assets/sound/bg_music01.mp3';
+bgMusic.loop = true;
 
 // Mouse
 const mouse = {
@@ -612,6 +619,10 @@ function handleGameStatus() {
     ctx.fillText('Score: ' + score, 180, 40);
     ctx.fillText('Resources: ' + numberOfResources, 180, 80);
     if (gameOver) {
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        startButton.style.display = 'block';
+        startButton.innerHTML = 'RESTART GAME';
         ctx.fillStyle = 'black';
         ctx.font = '60px Orbitron';
         ctx.fillText('OH NO!', canvas.width * 0.5 - 90, 250);
@@ -624,8 +635,23 @@ function handleGameStatus() {
         ctx.fillText('CONGRATS!', canvas.width * 0.5 - 180, 260)
         ctx.font = '33px Orbitron';
         ctx.fillText('YOU HAVE DEFENDED THE NEIGHBOURHOOD!', 20, 350)
+    } else {
+        
     }
 }
+
+// Start game
+startButton.addEventListener('click', function () {
+    if (!gameOver) {
+        animate();
+        bgMusic.currentTime = 0;
+        bgMusic.play();
+        startButton.style.display = 'none';
+    } else if (gameOver) {
+        startButton.innerHTML = 'START GAME';
+        startButton.style.display = 'none';
+    }
+});
 
 // Placing defenders
 canvas.addEventListener('click', function () {
@@ -667,7 +693,6 @@ function animate() {
     frame++;
     if (!gameOver) requestAnimationFrame(animate);
 };
-animate();
 
 function collisionDetection(first, second) {
     if (
