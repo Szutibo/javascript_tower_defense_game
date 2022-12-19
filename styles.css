@@ -38,7 +38,8 @@ body {
 }
 
 #startButton:hover {
-    scale: 1.1;   
+    scale: 1.1;
+    left: calc(50% + 17px);   
 }
 
 #startButton:active {

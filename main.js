@@ -21,13 +21,35 @@ const projectiles = [];
 const resources = [];
 const floatingMessages = [];
 const pathArray = [];
-const winningScore = 150;
-let isUserInteracted = false;
+const winningScore = 500;
 
 // Audio files
 const bgMusic = new Audio();
 bgMusic.src = 'assets/sound/bg_music01.mp3';
 bgMusic.loop = true;
+const winningMusic = new Audio();
+winningMusic.src = 'assets/sound/victory.mp3';
+winningMusic.loop = true;
+const losingMusic = new Audio();
+losingMusic.src = 'assets/sound/lose_music.ogg';
+losingMusic.loop = true;
+const losingScream = new Audio();
+losingScream.src = 'assets/sound/lose_scream.wav';
+const coinPickup = new Audio();
+coinPickup.src = 'assets/sound/coin01.ogg';
+const enemyEating = new Audio();
+enemyEating.src = 'assets/sound/crunch_bug.ogg';
+enemyEating.loop = true;
+const death1 = new Audio();
+death1.src = 'assets/sound/death01.ogg';
+const death2 = new Audio();
+death2.src = 'assets/sound/death02.ogg';
+const death3 = new Audio();
+death3.src = 'assets/sound/death03.ogg';
+const shootProjectileStrong = new Audio();
+shootProjectileStrong.src = 'assets/sound/projectile_strong.mp3';
+const shootProjectileWeak = new Audio();
+shootProjectileWeak.src = 'assets/sound/projectile_weak.mp3';
 
 // Mouse
 const mouse = {
@@ -200,7 +222,7 @@ class WeakerProjectile extends Projectile {
 class StrongerProjectile extends Projectile {
     constructor(x, y) {
         super(x, y);
-        this.power = 35;
+        this.power = 50;
         this.speed = 4;
         this.width = 30;
         this.height = 30;
@@ -212,7 +234,6 @@ function handleProjectiles() {
     for (let i = 0; i < projectiles.length; i++) {
         projectiles[i].update();
         projectiles[i].draw();
-
         for (let j = 0; j < enemies.length; j++) {
             if (enemies[j] && projectiles[i] && collisionDetection(projectiles[i], enemies[j])) {
                 enemies[j].health -= projectiles[i].power;
@@ -254,6 +275,7 @@ class Defender {
         this.shootingFrame = 3;
         this.fps = 18;
         this.chosenDefender = chosenDefender;
+        this.deathSound = death3;
     }
     draw() {
         // Debugging
@@ -270,8 +292,15 @@ class Defender {
             if (this.frameX === this.shootingFrame) this.shootNow = true;
         }
         if (this.shooting && this.shootNow) {
-            if (this.chosenDefender === 1) projectiles.push(new WeakerProjectile(this.x + 40, this.y + 77));
-            else if (this.chosenDefender === 2) projectiles.push(new StrongerProjectile(this.x + 70, this.y + 50));
+            if (this.chosenDefender === 1) {
+                projectiles.push(new WeakerProjectile(this.x + 40, this.y + 77));
+                shootProjectileWeak.currentTime = 0;
+                shootProjectileWeak.play();
+            } else if (this.chosenDefender === 2) {
+                projectiles.push(new StrongerProjectile(this.x + 70, this.y + 50));
+                shootProjectileStrong.currentTime = 0;
+                shootProjectileStrong.play();
+            }
             this.shootNow = false;
         }
     }
@@ -282,8 +311,9 @@ class AfroShroom extends Defender {
         super(x, y);
         this.spriteWidth = 503;
         this.spriteHeight = 513;
-        this.cost = 100;
+        this.cost = 85;
         this.image = defender1;
+        this.fps = 19;
     }
     draw() {
         super.draw();
@@ -297,9 +327,9 @@ class CuteBug extends Defender {
         this.spriteWidth = 255;
         this.spriteHeight = 209;
         this.maxFrame = 14;
-        this.cost = 200;
+        this.cost = 150;
         this.image = defender2;
-        this.fps = 13;
+        this.fps = 15;
     }
     draw() {
         super.draw();
@@ -320,10 +350,19 @@ function handleDefenders() {
             if (defenders[i] && collisionDetection(defenders[i], enemies[j])) {
                 enemies[j].movement = 0;
                 defenders[i].health -= enemies[j].damage;
+                enemyEating.play();
             }
             if (defenders[i] && defenders[i].health <= 0) {
+                enemyEating.pause();
+                enemyEating.currentTime = 0;
+                defenders[i].deathSound.play();
                 defenders.splice(i, 1);
                 i--;
+                enemies.forEach(enemy => {
+                    if (enemy.y === enemies[j].y) {
+                        enemy.movement = enemy.speed;
+                    }
+                });
                 enemies[j].movement = enemies[j].speed;
             }
         }
@@ -370,7 +409,7 @@ function chooseDefender() {
     ctx.fillStyle = card1Border;
     ctx.strokeStyle = card1Border;
     ctx.font = '22px Orbitron';
-    ctx.fillText('100', 22, 23);
+    ctx.fillText('85', 22, 23);
     ctx.drawImage(defender1, 0, 0, 503, 513, 7, 22, 503 * 0.15, 513 * 0.15);
     ctx.strokeRect(card1.x, card1.y, card1.width, card1.height);
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -378,7 +417,7 @@ function chooseDefender() {
     ctx.fillStyle = card2Border;
     ctx.strokeStyle = card2Border;
     ctx.font = '22px Orbitron';
-    ctx.fillText('200', 98, 23);
+    ctx.fillText('150', 98, 23);
     ctx.drawImage(defender2, 0, 0, 255, 209, 85, 32, 255 * 0.3, 209 * 0.3);
     ctx.strokeRect(card2.x, card2.y, card2.width, card2.height);
 }
@@ -439,6 +478,7 @@ class Enemy {
         this.frameY = 0;
         this.minFrame = 0;
         this.maxFrame = 5;
+        this.deathSound = death2;
     }
     update() {
         this.x -= this.movement;
@@ -462,14 +502,15 @@ class Enemy {
 class Carrott extends Enemy {
     constructor(verticalPosition) {
         super(verticalPosition);
-        this.speed = Math.random() * 0.2 + 0.5;
+        this.speed = Math.random() * 0.2 + 0.6;
         this.movement = this.speed;
-        this.health = 60;
+        this.health = 75;
         this.maxHealth = this.health;
         this.spriteWidth = 608;
         this.spriteHeight = 592;
         this.image = enemy1;
         this.damage = 0.1;
+        this.deathSound = death1;
     }
     draw() {
         super.draw();
@@ -481,9 +522,9 @@ class Carrott extends Enemy {
 class GrassMonster extends Enemy {
     constructor(verticalPosition) {
         super(verticalPosition);
-        this.speed = Math.random() * 0.2 + 0.28;
+        this.speed = Math.random() * 0.2 + 0.24;
         this.movement = this.speed;
-        this.health = 120;
+        this.health = 150;
         this.maxHealth = this.health;
         this.spriteWidth = 948;
         this.spriteHeight = 823;
@@ -501,15 +542,15 @@ class GrassMonster extends Enemy {
 class Bug extends Enemy {
     constructor(verticalPosition) {
         super(verticalPosition);
-        this.speed = Math.random() * 0.2 + 0.18;
+        this.speed = Math.random() * 0.2 + 0.08;
         this.movement = this.speed;
-        this.health = 180;
+        this.health = 350;
         this.maxHealth = this.health;
         this.spriteWidth = 1216;
         this.spriteHeight = 789;
         this.image = enemy2;
         this.maxFrame = 20;
-        this.damage = 0.3;
+        this.damage = 0.5;
     }
     draw() {
         super.draw();
@@ -519,20 +560,28 @@ class Bug extends Enemy {
 
 function handleEnemies() {
     let enemyType = Math.random();
-    let carrottProbability = 0.45;
-    let grassMonsterProbability = 0.75;
+    let carrottProbability = 0.55;
+    let grassMonsterProbability = 0.85;
     for (let i = 0; i < enemies.length; i++) {
         enemies[i].draw();
         enemies[i].update();
         if (enemies[i].x < cellSize) {
             gameOver = true;
+            losingScream.play();
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            enemyEating.pause();
+            enemyEating.currentTime = 0;
         }
         if (enemies[i].health <= 0) {
-            let gainedResources = enemies[i].maxHealth * 0.15;
+            let gainedResources = Math.floor(enemies[i].maxHealth * 0.15);
             floatingMessages.push(new FloatingMessage('+' + gainedResources, enemies[i].x, enemies[i].y, 30, 'black'));
             floatingMessages.push(new FloatingMessage('+' + gainedResources, 470, 85, 30, 'gold'));
             numberOfResources += gainedResources;
             score += gainedResources;
+            enemyEating.pause();
+            enemyEating.currentTime = 0;
+            enemies[i].deathSound.play();
             const findThisIndex = enemyPositions.indexOf(enemies[i].y);
             enemyPositions.splice(findThisIndex, 1);
             enemies.splice(i, 1);
@@ -542,9 +591,9 @@ function handleEnemies() {
     if (frame % enemiesInterval === 0 && score < winningScore) {
         let verticalPosition = Math.floor(Math.random() * 5 + 1) * cellSize + cellGap;
         if (enemiesInterval > 400) {
-            carrottProbability = 0.45;
-            grassMonsterProbability = 0.75;
-        } else if (enemiesInterval <= 400) {
+            carrottProbability = 0.55;
+            grassMonsterProbability = 0.85;
+        } else if (enemiesInterval <= 300) {
             carrottProbability = 0.35;
             grassMonsterProbability = 0.65;
         }
@@ -553,8 +602,8 @@ function handleEnemies() {
         else enemies.push(new Bug(verticalPosition));
         enemyPositions.push(verticalPosition);
         // Game difficulty
-        if (enemiesInterval > 400) enemiesInterval -= 40;
-        else if (enemiesInterval > 120) enemiesInterval -= 60;
+        if (enemiesInterval > 400) enemiesInterval -= 30;
+        else if (enemiesInterval > 120) enemiesInterval -= 40;
     }
 }
 
@@ -607,6 +656,7 @@ function handleResources() {
             floatingMessages.push(new FloatingMessage('+' + resources[i].amount, resources[i].x, resources[i].y, 30, 'black'));
             floatingMessages.push(new FloatingMessage('+' + resources[i].amount, 470, 85, 30, 'gold'));
             resources.splice(i, 1);
+            coinPickup.play();
             i--;
         }
     }
@@ -619,30 +669,41 @@ function handleGameStatus() {
     ctx.fillText('Score: ' + score, 180, 40);
     ctx.fillText('Resources: ' + numberOfResources, 180, 80);
     if (gameOver) {
-        bgMusic.pause();
-        bgMusic.currentTime = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         startButton.style.display = 'block';
         startButton.innerHTML = 'RESTART GAME';
-        ctx.fillStyle = 'black';
+        ctx.fillStyle = 'red';
         ctx.font = '60px Orbitron';
-        ctx.fillText('OH NO!', canvas.width * 0.5 - 90, 250);
+        ctx.fillText('OH NO!', canvas.width * 0.5 - 125, 250);
         ctx.font = '45px Orbitron';
-        ctx.fillText('YOU HAVE BEEN EATEN ALIVE!', 45, 350);
+        ctx.fillText('YOU HAVE BEEN EATEN ALIVE!', 45, 380);
     }
     if (score >= winningScore && enemies.length === 0) {
-        ctx.fillStyle = 'black';
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        enemyEating.pause();
+        enemyEating.currentTime = 0;
+        startButton.style.display = 'block';
+        startButton.innerHTML = 'RESTART GAME';
+        winningMusic.play();
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'gold';
         ctx.font = '60px Orbitron';
-        ctx.fillText('CONGRATS!', canvas.width * 0.5 - 180, 260)
+        ctx.fillText('CONGRATS!', canvas.width * 0.5 - 205, 260);
         ctx.font = '33px Orbitron';
-        ctx.fillText('YOU HAVE DEFENDED THE NEIGHBOURHOOD!', 20, 350)
-    } else {
-        
+        ctx.fillText('YOU HAVE DEFENDED THE NEIGHBOURHOOD!', 20, 380);
+        gameOver = true;
+    } else if (gameOver && score < winningScore) {
+        losingMusic.play();
     }
 }
 
 // Start game
 startButton.addEventListener('click', function () {
     if (!gameOver) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         animate();
         bgMusic.currentTime = 0;
         bgMusic.play();
@@ -650,20 +711,27 @@ startButton.addEventListener('click', function () {
     } else if (gameOver) {
         startButton.innerHTML = 'START GAME';
         startButton.style.display = 'none';
+        winningMusic.pause();
+        winningMusic.currentTime = 0;
+        losingMusic.pause();
+        losingMusic.currentTime = 0;
+        bgMusic.currentTime = 0;
+        bgMusic.play();
+        // Restart functions
+        restartGame();
+        animate();
     }
 });
 
 // Placing defenders
 canvas.addEventListener('click', function () {
-    let defenderCost;
+    let defenderCost = chosenDefender === 1 ? 85 : 150;
     const gridPositionX = mouse.x - (mouse.x % cellSize) + cellGap;
     const gridPositionY = mouse.y - (mouse.y % cellSize) + cellGap;
     if (gridPositionY < cellSize || gridPositionX <= cellSize * 2) return;
     for (let i = 0; i < defenders.length; i++) {
         if (defenders[i].x === gridPositionX && defenders[i].y === gridPositionY) return;
     };
-    if (chosenDefender === 1) defenderCost = 100;
-    else if (chosenDefender === 2) defenderCost = 200;
     if (numberOfResources >= defenderCost) {
         if (chosenDefender === 1) {
             defenders.push(new AfroShroom(gridPositionX, gridPositionY));
@@ -707,6 +775,26 @@ function collisionDetection(first, second) {
     };
 };
 
+function restartGame() {
+    defenders.length = 0;
+    enemies.length = 0;
+    enemyPositions.length = 0;
+    projectiles.length = 0;
+    resources.length = 0;
+    floatingMessages.length = 0;
+    gameOver = false;
+    enemiesInterval = 550;
+    numberOfResources = 300;
+    frame = 0;
+    score = 0;
+    chosenDefender = 1;
+};
+
 window.addEventListener('resize', function () {
     canvasPosition = canvas.getBoundingClientRect();
+});
+
+window.addEventListener('load', function () {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
