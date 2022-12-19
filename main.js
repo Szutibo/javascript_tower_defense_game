@@ -7,12 +7,13 @@ canvas.height = 600;
 const startButton = document.getElementById('startButton');
 const cellSize = 100;
 const cellGap = 3;
-let enemiesInterval = 550;
-let numberOfResources = 300;
+let enemiesInterval = 650;
+let numberOfResources = 350;
 let frame = 0;
 let gameOver = false;
 let score = 0;
 let chosenDefender = 1;
+let framesAfterVictory = 0;
 const gameGrid = [];
 const defenders = [];
 const enemies = [];
@@ -21,7 +22,7 @@ const projectiles = [];
 const resources = [];
 const floatingMessages = [];
 const pathArray = [];
-const winningScore = 500;
+const winningScore = 550;
 
 // Audio files
 const bgMusic = new Audio();
@@ -560,8 +561,8 @@ class Bug extends Enemy {
 
 function handleEnemies() {
     let enemyType = Math.random();
-    let carrottProbability = 0.55;
-    let grassMonsterProbability = 0.85;
+    let carrottProbability = 0.6;
+    let grassMonsterProbability = 0.9;
     for (let i = 0; i < enemies.length; i++) {
         enemies[i].draw();
         enemies[i].update();
@@ -590,25 +591,31 @@ function handleEnemies() {
     }
     if (frame % enemiesInterval === 0 && score < winningScore) {
         let verticalPosition = Math.floor(Math.random() * 5 + 1) * cellSize + cellGap;
-        if (enemiesInterval > 400) {
-            carrottProbability = 0.55;
-            grassMonsterProbability = 0.85;
-        } else if (enemiesInterval <= 300) {
+        if (enemiesInterval > 550) {
+            carrottProbability = 0.6;
+            grassMonsterProbability = 0.9;
+        } else if (enemiesInterval > 400) {
+            carrottProbability = 0.5;
+            grassMonsterProbability = 0.75;
+        } else if (enemiesInterval > 150) {
             carrottProbability = 0.35;
             grassMonsterProbability = 0.65;
+        } else if (enemiesInterval <= 150) {
+            carrottProbability = 0.25;
+            grassMonsterProbability = 0.5;
         }
         if (enemyType < carrottProbability) enemies.push(new Carrott(verticalPosition));
         else if (enemyType < grassMonsterProbability) enemies.push(new GrassMonster(verticalPosition));
         else enemies.push(new Bug(verticalPosition));
         enemyPositions.push(verticalPosition);
         // Game difficulty
-        if (enemiesInterval > 400) enemiesInterval -= 30;
+        if (enemiesInterval > 400) enemiesInterval -= 25;
         else if (enemiesInterval > 120) enemiesInterval -= 40;
     }
 }
 
 // Resources
-const amounts = [20, 30, 40, 50];
+const amounts = [30, 40, 50, 60];
 const coin = new Image();
 coin.src = 'assets/img/others/coin.png';
 
@@ -678,6 +685,7 @@ function handleGameStatus() {
         ctx.fillText('OH NO!', canvas.width * 0.5 - 125, 250);
         ctx.font = '45px Orbitron';
         ctx.fillText('YOU HAVE BEEN EATEN ALIVE!', 45, 380);
+        losingMusic.play();
     }
     if (score >= winningScore && enemies.length === 0) {
         bgMusic.pause();
@@ -694,9 +702,10 @@ function handleGameStatus() {
         ctx.fillText('CONGRATS!', canvas.width * 0.5 - 205, 260);
         ctx.font = '33px Orbitron';
         ctx.fillText('YOU HAVE DEFENDED THE NEIGHBOURHOOD!', 20, 380);
-        gameOver = true;
-    } else if (gameOver && score < winningScore) {
-        losingMusic.play();
+        if (framesAfterVictory > 3) {
+            gameOver = true;
+            framesAfterVictory = 0;
+        } else framesAfterVictory++;
     }
 }
 
